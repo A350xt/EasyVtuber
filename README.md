@@ -238,6 +238,16 @@ A卡I卡使用 DirectML，这个框架与显卡厂商的显卡驱动及 Direct12
 
 请在GPU页面中点击`Video Decode`或`Video Processing`按钮可以看到下拉，请对这里的选项挨个尝试找到正确的程序负载，一般在 `cuda` 或 `3D` 或 `Compute_X` 或 `Graphics_X`。
 
+> Q5: 想做移动端/手机端 AI 虚拟主播，需要把模型压到什么程度才能跑得动？
+
+当前工程的启动器、Spout/OBS 管线和大部分依赖都绑在 Windows 桌面环境，直接拿到手机上运行不可行，需要自行迁移到移动端推理框架（onnxruntime-mobile、ncnn、TFLite 等）并重写输入输出。要降低算力门槛，建议：
+1. 仅保留主渲染模型：选择 `v3_seperable_half` 或 `v4_student` 这类轻量模型，关闭插帧（RIFE）和超分（waifu2x/Real-ESRGAN），分辨率控制在 256~320（输入）/720p（输出）内。
+2. 做低精度和模型裁剪：基于 `ezvtuber-rt` 里的 ONNX 模型做 FP16/INT8 量化，必要时裁掉眉毛/身体通道，确保权重体积 <100MB、单帧算力在 1~2 GFLOPs 量级。
+3. 依赖 NPU/GPU 而非 CPU：手机纯 CPU 难以实时，至少需要 4~6 TOPS（INT8）才能在 15fps 左右跑通主模型，想要接近 30fps 一般需要 8~10 TOPS 的移动端 NPU/GPU 峰值，且仍需牺牲画质与特效。
+
+综上，移动端能做验证性移植，但要在手机上获得接近 PC 的体验需要额外工程工作和明显的效果取舍；直接在 PC 上运行仍是推荐方案。
+更详细的可行性分析与迁移路线见 `docs/mobile_feasibility.md`。
+
 > Q6: 本机有两张显卡，如何使用第二张副卡使用这个项目？
 
 在运行前配置环境变量`EZVTB_DEVICE_ID`为你想要运行的GPU ID,此变量缺省为`0`
